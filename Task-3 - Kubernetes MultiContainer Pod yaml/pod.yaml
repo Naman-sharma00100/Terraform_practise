@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+  labels:
+    app: mypod
+spec:
+  volumes:
+    - name: html-files
+      emptyDir: {}
+    - name: nginx-config
+      configMap:
+        name: nginx-config
+  containers:
+    - name: nginx-container
+      image: nginx
+      volumeMounts:
+        - name: html-files
+          mountPath: /usr/share/nginx/html
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+    - name: ubuntu-container
+      image: ubuntu
+      volumeMounts:
+        - name: html-files
+          mountPath: /usr/share/nginx/html
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          echo '<html><body><h1>This is the HOME page</h1></body></html>' > /usr/share/nginx/html/index.html &&
+          mkdir -p /usr/share/nginx/html/insecure /usr/share/nginx/html/secure && 
+          echo '<html><body><h1>This is an insecure page</h1></body></html>' > /usr/share/nginx/html/insecure/index.html &&
+          echo '<html><body><h1>This is a secure page</h1></body></html>' > /usr/share/nginx/html/secure/index.html &&
+          sleep infinity
+
