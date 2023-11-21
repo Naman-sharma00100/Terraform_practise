@@ -94,16 +94,18 @@ resource "kubernetes_pod" "mypod" {
         name       = "html-files"
         mount_path = "/usr/share/nginx/html"
       }
-
-      command = ["/bin/sh", "-c"]
-
+      command = [
+                  "/bin/sh",
+                  "-c",
+                ]
       args = [
-            "echo '<html><body><h1>This is the HOME page</h1></body></html>' > /usr/share/nginx/html/index.html ",
-            "mkdir -p /usr/share/nginx/html/insecure /usr/share/nginx/html/secure" ,
-            "echo '<html><body><h1>This is an insecure page</h1></body></html>' > /usr/share/nginx/html/insecure/index.html",
-            "echo '<html><body><h1>This is a secure page</h1></body></html>' > /usr/share/nginx/html/secure/index.html ",
-            "sleep infinity ",
-          ]
+              "echo '<html><body><h1>This is the HOME page</h1></body></html>' > /usr/share/nginx/html/index.html &&",
+              "mkdir -p /usr/share/nginx/html/insecure /usr/share/nginx/html/secure &&",
+              "echo '<html><body><h1>This is an insecure page</h1></body></html>' > /usr/share/nginx/html/insecure/index.html &&",
+              "echo '<html><body><h1>This is a secure page</h1></body></html>' > /usr/share/nginx/html/secure/index.html &&",
+              "sleep infinity",
+            ]
+      
     }
   }
 }
