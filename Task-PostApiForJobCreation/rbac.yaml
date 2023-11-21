@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: go-server-service-account
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: go-server-role
+rules:
+- apiGroups: [""] 
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch", "extensions"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: go-server-role-binding
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: go-server-service-account
+  namespace: default
+roleRef:
+  kind: Role 
+  name: go-server-role
+  apiGroup: rbac.authorization.k8s.io
+
