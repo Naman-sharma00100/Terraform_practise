@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -18,7 +18,6 @@ import (
 )
 
 const (
-	jobName              = "dynamic-job"
 	serviceAccountName   = "go-server-service-account"
 	roleName             = "go-server-role"
 	roleBindingName      = "go-server-role-binding"
@@ -27,22 +26,36 @@ const (
 )
 
 type jobParams struct {
+	Name    string   `json:"name"`
 	Image   string   `json:"image"`
 	Command []string `json:"command"`
+	JobName string   `json:"jobname"`
+}
+
+func handleJobRequest(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case "/job":
+		handleJobOperation(w, r, createJob)
+	case "/deletejob":
+		handleJobOperation(w, r, deleteJob)
+	default:
+		log.Printf("Redirected to default route, Routing issue.")
+		http.Error(w, "Not Found", http.StatusNotFound)
+	}
 }
 
 func createJob(clientset *kubernetes.Clientset, params jobParams) error {
 	var backOffLimit int32 = 0
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: jobName,
+			Name: params.JobName,
 		},
 		Spec: batchv1.JobSpec{
 			Template: v1.PodTemplateSpec{
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
-							Name:    "job-container",
+							Name:    params.Name,
 							Image:   params.Image,
 							Command: params.Command,
 						},
@@ -62,14 +75,30 @@ func createJob(clientset *kubernetes.Clientset, params jobParams) error {
 	return nil
 }
 
-func handleJobRequest(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
+func deleteJob(clientset *kubernetes.Clientset, params jobParams) error {
+	log.Printf("Attempting to delete job: %s", params.JobName)
+
+	deleteBackground := metav1.DeletePropagationBackground
+	err := clientset.BatchV1().Jobs("default").Delete(context.TODO(), params.JobName, metav1.DeleteOptions{
+		PropagationPolicy: &deleteBackground,
+	})
+	if err != nil {
+		log.Printf("Failed to delete Kubernetes job '%s': %v", params.JobName, err)
+		return fmt.Errorf("failed to delete Kubernetes job: %v", err)
+	}
+
+	log.Printf("Deleted K8s job '%s' successfully", params.JobName)
+	return nil
+}
+
+func handleJobOperation(w http.ResponseWriter, r *http.Request, operation func(*kubernetes.Clientset, jobParams) error) {
+	if r.Method != http.MethodPost && r.Method != http.MethodDelete {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	var params jobParams
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error reading request body: %v", err), http.StatusBadRequest)
 		return
@@ -93,9 +122,8 @@ func handleJobRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = createJob(clientset, params)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error creating Kubernetes job: %v", err), http.StatusInternalServerError)
+	if err := operation(clientset, params); err != nil {
+		http.Error(w, fmt.Sprintf("Error performing Kubernetes operation: %v", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -108,6 +136,7 @@ func main() {
 	flag.Parse()
 
 	http.HandleFunc("/job", handleJobRequest)
+	http.HandleFunc("/deletejob", handleJobRequest)
 
 	fmt.Printf("Server listening on %s\n", *listenAddress)
 	err := http.ListenAndServe(*listenAddress, nil)
