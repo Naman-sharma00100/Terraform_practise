@@ -72,7 +72,7 @@ resource "kubernetes_deployment" "go_server" {
       spec {
         container {
           name  = "go-server"
-          image = "numcys/go-job-server:3.1.2"
+          image = "naman.training.registry/go-job-server:4.0"
 
           port {
             container_port = 8080

@@ -1,5 +1,5 @@
 provider "kubernetes" {
-    config_path    = "~/.kube/config"
+  config_path    = "~/.kube/config"
   config_context = "minikube"
 }
 
@@ -14,8 +14,8 @@ resource "kubernetes_service_v1" "nginx_service" {
     }
 
     port {
-      protocol   = "TCP"
-      port       = 80
+      protocol = "TCP"
+      port     = 80
     }
   }
 }
@@ -29,7 +29,7 @@ resource "kubernetes_service" "my-backend-api" {
   }
 
   spec {
-    type = "ClusterIP"  
+    type = "ClusterIP"
 
     port {
       port        = 80
@@ -80,10 +80,10 @@ resource "kubernetes_ingress_v1" "secure_ingress" {
   metadata {
     name = "secure-ingress"
     annotations = {
-      "kubernetes.io/ingress.class"            = "nginx"
-      "nginx.ingress.kubernetes.io/auth-type" = "basic"
+      "kubernetes.io/ingress.class"             = "nginx"
+      "nginx.ingress.kubernetes.io/auth-type"   = "basic"
       "nginx.ingress.kubernetes.io/auth-secret" = "basic-auth"
-      "nginx.ingress.kubernetes.io/auth-realm" = "Authentication required"
+      "nginx.ingress.kubernetes.io/auth-realm"  = "Authentication required"
     }
   }
 
@@ -93,7 +93,7 @@ resource "kubernetes_ingress_v1" "secure_ingress" {
 
       http {
         path {
-          path     = "/secure/"
+          path      = "/secure/"
           path_type = "Prefix"
           backend {
             service {
@@ -108,7 +108,7 @@ resource "kubernetes_ingress_v1" "secure_ingress" {
     }
 
     tls {
-      hosts = ["naman.training.app"]
+      hosts       = ["naman.training.app"]
       secret_name = "my-tls-secret"
     }
   }
@@ -126,7 +126,7 @@ resource "kubernetes_ingress_v1" "insecure_ingress" {
       host = "naman.training.app"
       http {
         path {
-          path     = "/insecure"
+          path = "/insecure"
           backend {
             service {
               name = kubernetes_service_v1.nginx_service.metadata[0].name
@@ -140,7 +140,7 @@ resource "kubernetes_ingress_v1" "insecure_ingress" {
     }
 
     tls {
-      hosts = ["naman.training.app"]
+      hosts       = ["naman.training.app"]
       secret_name = "my-tls-secret"
     }
   }
@@ -151,7 +151,7 @@ resource "kubernetes_ingress_v1" "api_ingress" {
     name = "api-ingress"
     annotations = {
       "kubernetes.io/ingress.class" = "nginx"
-      "nginx.ingress.kubernetes.io/rewrite-target": "/$2"
+      "nginx.ingress.kubernetes.io/rewrite-target" : "/$2"
     }
   }
   spec {
@@ -159,7 +159,7 @@ resource "kubernetes_ingress_v1" "api_ingress" {
       host = "naman.training.app"
       http {
         path {
-          path     = "/job(/|$)(.*)"
+          path      = "/job(/|$)(.*)"
           path_type = "Prefix"
           backend {
             service {
@@ -174,7 +174,7 @@ resource "kubernetes_ingress_v1" "api_ingress" {
     }
 
     tls {
-      hosts = ["naman.training.app"]
+      hosts       = ["naman.training.app"]
       secret_name = "my-tls-secret"
     }
   }
@@ -267,7 +267,7 @@ resource "kubernetes_deployment" "mypod" {
 
           command = ["/bin/sh", "-c"]
 
-          args = [ 
+          args = [
             "mkdir -p /usr/share/nginx/html/insecure /usr/share/nginx/html/secure && echo '<html><body><h1>This is the HOME page</h1></body></html>' > /usr/share/nginx/html/index.html && echo '<html><body><h1>This is an insecure page</h1></body></html>' > /usr/share/nginx/html/insecure/index.html && echo '<html><body><h1>This is a secure page</h1></body></html>' > /usr/share/nginx/html/secure/index.html && exec nginx -g 'daemon off;'",
           ]
         }
@@ -284,8 +284,8 @@ resource "kubernetes_secret" "my_tls_secret" {
   }
 
   data = {
-    "tls.crt" =  file("naman.training.app.crt")   
-    "tls.key" = file("naman.training.app-key.pem")  
+    "tls.crt" = file("naman.training.app.crt")
+    "tls.key" = file("naman.training.app-key.pem")
 
   }
 }
