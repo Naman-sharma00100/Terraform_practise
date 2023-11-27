@@ -3,6 +3,19 @@ provider "kubernetes" {
   config_context = "minikube"
 }
 
+
+resource "kubernetes_secret" "my_tls_secret_server" {
+  metadata {
+    name = "my-tls-secret-server"
+  }
+
+  data = {
+    "tls.crt" = file("../naman.training.app.crt")
+    "tls.key" = file("../naman.training.app-key.pem")
+  }
+}
+
+
 resource "kubernetes_service_account" "go_server_service_account" {
   metadata {
     name = "go-server-service-account"
@@ -127,6 +140,10 @@ resource "kubernetes_ingress_v1" "go_server_ingress" {
           }
         }
       }
+    }
+    tls {
+      hosts       = ["naman.training.app"]
+      secret_name = "my-tls-secret-server"
     }
   }
 }

@@ -9,9 +9,8 @@ resource "kubernetes_secret" "my_tls_secret" {
   }
 
   data = {
-    "tls.crt" = file("../naman.training.app.crt")
-    "tls.key" = file("../naman.training.app-key.pem")
-
+    "tls.crt" = file("../naman.training.registry.crt")
+    "tls.key" = file("../naman.training.registry.key")
   }
 }
 
@@ -21,9 +20,48 @@ resource "kubernetes_secret" "registry_secret" {
   }
 
   data = {
-    htpasswd = "dXNlcjE6YWRtaW4="
+    htpasswd = "admin:$2y$05$y67v3WPh/XZPg8aItiYmSesurOCItXLmihm9Du0VUPAT6HMNKP/qK"
   }
 }
+
+
+resource "kubernetes_persistent_volume" "image-registry" {
+  metadata {
+    name = "image-registry"
+  }
+  spec {
+    capacity = {
+      storage = "2Gi"
+    }
+    access_modes = ["ReadWriteOnce"]
+    persistent_volume_reclaim_policy = "Retain"
+    storage_class_name = "standard"
+    persistent_volume_source {
+      host_path {
+        path = "/c/Registry"
+      }
+    }
+  }
+}
+
+resource "kubernetes_persistent_volume_claim" "image-registry-claim" {
+  metadata {
+    name = "image-registry-claim"
+  }
+  spec {
+    access_modes = [ "ReadWriteOnce" ]
+    resources {
+      requests = {
+        storage = "1Gi"
+        
+      }
+    }
+    storage_class_name = "standard"
+    volume_name = kubernetes_persistent_volume.image-registry.metadata.0.name
+  } 
+}
+
+
 
 resource "kubernetes_ingress_v1" "registry_ingress" {
   metadata {
@@ -102,7 +140,6 @@ resource "kubernetes_deployment" "registry" {
           app = "registry"
         }
       }
-
       spec {
         container {
           name  = "registry"
@@ -111,7 +148,51 @@ resource "kubernetes_deployment" "registry" {
           port {
             container_port = 5000
           }
+
+          env {
+            name  = "REGISTRY_AUTH"
+            value = "htpasswd"
+          }
+
+          env {
+            name  = "REGISTRY_AUTH_HTPASSWD_REALM"
+            value = "Registry Realm"
+          }
+
+          env {
+            name  = "REGISTRY_AUTH_HTPASSWD_PATH"
+            value = "/var/lib/registry/auth/htpasswd"
+          }
+
+          volume_mount {
+            name        = "registry-auth"
+            mount_path  = "/var/lib/registry/auth"
+          }
+
+          volume_mount {
+            name        = "registry-data"
+            mount_path  = "/var/lib/registry"
+          }
         }
+
+        image_pull_secrets {
+            name = "registry-auth-secret"
+          }
+
+        volume {
+          name = "registry-data"
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim.image-registry-claim.metadata[0].name
+          }
+        }
+
+        volume {
+          name = "registry-auth"
+          secret {
+            secret_name = kubernetes_secret.registry_secret.metadata[0].name
+          }
+        }
+
       }
     }
   }
