@@ -1,0 +1,14 @@
+{{- include "chart.tpl" . | nindent 0 }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Release.Name }}-image-registry
+spec:
+  capacity:
+    storage: {{ .Values.persistentVolume.capacity }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{ .Values.persistentVolume.storageClass }}
+  hostPath:
+    path: {{ .Values.persistentVolume.hostPath }}

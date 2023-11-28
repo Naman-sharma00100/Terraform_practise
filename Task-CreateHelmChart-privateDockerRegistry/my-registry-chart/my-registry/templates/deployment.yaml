@@ -1,0 +1,41 @@
+{{- include "chart.tpl" . | nindent 0 }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-registry
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: registry
+  template:
+    metadata:
+      labels:
+        app: registry
+    spec:
+      containers:
+      - name: registry
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: 5000
+        env:
+        - name: REGISTRY_AUTH
+          value: "htpasswd"
+        - name: REGISTRY_AUTH_HTPASSWD_REALM
+          value: "Registry Realm"
+        - name: REGISTRY_AUTH_HTPASSWD_PATH
+          value: "/var/lib/registry/auth/htpasswd"
+        volumeMounts:
+        - name: registry-auth
+          mountPath: /var/lib/registry/auth
+        - name: registry-data
+          mountPath: /var/lib/registry
+      imagePullSecrets:
+      - name: registry-auth-secret
+      volumes:
+      - name: registry-data
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-image-registry-claim
+      - name: registry-auth
+        secret:
+          secretName: {{ .Values.registrySecret.name }}

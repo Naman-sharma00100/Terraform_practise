@@ -1,0 +1,25 @@
+replicaCount: 1
+
+image:
+  repository: registry
+  tag: "2"
+
+ingress:
+  host: "naman.training.registry"
+
+tlsSecret:
+  name: "my-tls-secret"
+
+persistentVolume:
+  capacity: "2Gi"
+  storageClass: "standard"
+  hostPath: "/c/Registry"
+
+persistentVolumeClaim:
+  storage: "1Gi"
+  storageClass: "standard"
+
+registrySecret:
+  name: "registry-secret"
+  htpasswd: "admin:$2y$05$y67v3WPh/XZPg8aItiYmSesurOCItXLmihm9Du0VUPAT6HMNKP/qK"
+
