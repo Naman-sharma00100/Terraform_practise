@@ -3,32 +3,30 @@ provider "kubernetes" {
   config_context = "minikube"
 }
 
-resource "kubernetes_deployment" "example" {
+resource "kubernetes_daemonset" "nginx_daemonset" {
   metadata {
-    name = "example-depl"
-    namespace = "monitoring"
+    name = "nginx-daemonset"
   }
 
   spec {
-    replicas = 1
-
     selector {
       match_labels = {
-        app = "example"
+        app = "nginx"
       }
     }
 
     template {
       metadata {
         labels = {
-          app = "example"
+          app = "nginx"
         }
       }
 
       spec {
         container {
-          image = "nginx:latest"
           name  = "nginx"
+          image = "nginx:latest"
+
           port {
             container_port = 80
           }
